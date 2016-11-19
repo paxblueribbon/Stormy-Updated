@@ -342,6 +342,9 @@ public class MainActivity extends AppCompatActivity implements RuntimePermission
                 mCityName = addresses.get(0).getAddressLine(0);
                 mStateName = addresses.get(0).getAddressLine(1);
                 mCountryName = addresses.get(0).getAddressLine(2);
+                Intent i = new Intent("whereIam");
+                i.putExtra("stateCountry", mStateName + " " + mCountryName);
+                sendBroadcast(i);
                 Log.d("wuddup", "Latitude is: " + mLatitude + " and Longitude is: " + mLongitude);
             }
 

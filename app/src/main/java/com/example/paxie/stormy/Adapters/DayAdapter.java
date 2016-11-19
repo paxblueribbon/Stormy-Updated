@@ -1,6 +1,12 @@
 package com.example.paxie.stormy.Adapters;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.location.Address;
+import android.location.Geocoder;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +16,10 @@ import android.widget.TextView;
 
 import com.example.paxie.stormy.R;
 import com.example.paxie.stormy.weather.Day;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
 import butterknife.ButterKnife;
 
@@ -46,7 +56,7 @@ public class DayAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        ViewHolder holder;
+        final ViewHolder holder;
 
         if (convertView == null) {
             //brand new
@@ -55,7 +65,6 @@ public class DayAdapter extends BaseAdapter {
             holder.iconImageView = (ImageView) convertView.findViewById(R.id.iconImageView);
             holder.temperatureLabel = (TextView) convertView.findViewById(R.id.temperatureLabel);
             holder.dayLabel = (TextView) convertView.findViewById(R.id.dayNameLabel);
-
             convertView.setTag(holder);
         }
 
@@ -87,6 +96,7 @@ public class DayAdapter extends BaseAdapter {
         ImageView iconImageView; //public by default
         TextView temperatureLabel;
         TextView dayLabel;
+        TextView locationLabel;
 
     }
 
