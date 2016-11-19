@@ -44,15 +44,4 @@
         android:textSize="30sp"
         android:layout_marginTop="16dp"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Gay Agenda, Portland, OR"
-        android:id="@+id/locationLabel"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:textColor="#FFFFFFFF"
-        android:textSize="18sp"
-        android:layout_marginBottom="10dp"/>
-
 </RelativeLayout>
