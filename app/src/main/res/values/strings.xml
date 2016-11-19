@@ -9,4 +9,12 @@
     <string name="title_activity_daily_forecast">DailyForecastActivity</string>
     <string name="noDailyForecastData">There is no data to display.</string>
     <string name="title_activity_hourly_forecast">HourlyForecastActivity</string>
+    <string name="location_settings">Location Settings</string>
+    <string name="location_settings_message">Location is not enabled. Do you wish to go to the settings menu?</string>
+    <string name="location_settings_button">Settings</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="permission_camera_rationale">We need you to enable location services in order to show you the weather in your location</string>
+    <string name="button_allow">Allow</string>
+    <string name="button_deny">Deny</string>
+    <string name="location_permissions_rationale">Yo, we need your location info if we\'re gonna give you local weather results</string>
 </resources>

@@ -17,14 +17,14 @@ import com.example.paxie.stormy.weather.Hour;
 
 import java.util.Arrays;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class HourlyForecastActivity extends AppCompatActivity {
 
     private Hour[] mHours;
 
-    @Bind(R.id.recyclerview) RecyclerView mRecyclerView;
+    @BindView(R.id.recyclerview) RecyclerView mRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -1,19 +1,31 @@
 package com.example.paxie.stormy.ui;
 
+import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
+import android.location.Address;
+import android.location.Geocoder;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.canelmas.let.AskPermission;
+import com.canelmas.let.DeniedPermission;
+import com.canelmas.let.Let;
+import com.canelmas.let.RuntimePermissionListener;
+import com.canelmas.let.RuntimePermissionRequest;
+import com.example.paxie.stormy.GPS_Service;
 import com.example.paxie.stormy.R;
 import com.example.paxie.stormy.weather.Current;
 import com.example.paxie.stormy.weather.Day;
@@ -24,62 +36,101 @@ import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends AppCompatActivity implements RuntimePermissionListener {
 
     public static final String TAG = MainActivity.class.getSimpleName();
     public static final String DAILY_FORECAST = "DAILY_FORECAST";
     public static final String HOURLY_FORECAST = "HOURLY_FORECAST";
-
     private Forecast mForecast;
+    private double mLatitude;
+    private double mLongitude;
+    public String mCityName;
+    public String mStateName;
+    public String mCountryName;
+    private BroadcastReceiver mBroadcastReceiver;
 
-    @Bind(R.id.timeLabel) TextView mTimeLabel;
-    @Bind(R.id.temperatureLabel) TextView mTemperatureLabel;
-    @Bind(R.id.humidityValue) TextView mHumidityValue;
-    @Bind(R.id.precipValue) TextView mPrecipValue;
-    @Bind(R.id.summaryLabel) TextView mSummaryLabel;
-    @Bind(R.id.iconImageView) ImageView mIconImageView;
-    @Bind(R.id.refreshImageView) ImageView mRefreshImageView;
-    @Bind(R.id.progressBar) ProgressBar mProgressBar;
+    @BindView(R.id.timeLabel)
+    TextView mTimeLabel;
+    @BindView(R.id.temperatureLabel)
+    TextView mTemperatureLabel;
+    @BindView(R.id.humidityValue)
+    TextView mHumidityValue;
+    @BindView(R.id.precipValue)
+    TextView mPrecipValue;
+    @BindView(R.id.summaryLabel)
+    TextView mSummaryLabel;
+    @BindView(R.id.iconImageView)
+    ImageView mIconImageView;
+    @BindView(R.id.refreshImageView)
+    ImageView mRefreshImageView;
+    @BindView(R.id.progressBar)
+    ProgressBar mProgressBar;
+    @BindView(R.id.locationLabel)
+    TextView mLocationlabel;
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Let.handle(this, requestCode, permissions, grantResults);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkGPS();
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mBroadcastReceiver != null){
+            unregisterReceiver(mBroadcastReceiver);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Intent i =new Intent(getApplicationContext(),GPS_Service.class);
+        startService(i);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        mProgressBar.setVisibility(View.INVISIBLE);
 
-        final double latitude = 45.4935;
-        final double longitude = -122.6251;
+
+        mProgressBar.setVisibility(View.INVISIBLE);
 
         mRefreshImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-            getForecast(latitude, longitude);
+                getForecast();
             }
         });
-
-
-        getForecast(latitude, longitude);
+        //Intent i =new Intent(getApplicationContext(),GPS_Service.class);
+        //startService(i);
+        checkGPS();
+        getForecast();
         Log.d(TAG, "Main UI code is running!");
-        }
+    }
+@AskPermission({Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION})
+    private void getForecast() {
+        checkGPS();
 
-    private void getForecast(double latitude, double longitude) {
         String apiKey = "1621390f8c36997cb1904914b726df52";
         String forecastUrl = "https://api.forecast.io/forecast/" + apiKey +
-                "/" + latitude + "," + longitude;
+                "/" + mLatitude + "," + mLongitude;
 
         if (isNetworkAvailable()) {
             toggleRefresh();
@@ -135,32 +186,34 @@ public class MainActivity extends ActionBarActivity {
                     }
                 }
             });
+        } else {
+            Toast.makeText(this, "Network is currently unavailable!", Toast.LENGTH_LONG).show();
+        }
     }
 
-        else {
-            Toast.makeText(this, "Network is currently unavailable!", Toast.LENGTH_LONG).show();
-    }
-    }
 
     private void toggleRefresh() {
-       if (mProgressBar.getVisibility() == View.INVISIBLE) {
-        mProgressBar.setVisibility(View.VISIBLE);
-        mRefreshImageView.setVisibility(View.INVISIBLE);
+        if (mProgressBar.getVisibility() == View.INVISIBLE) {
+            mProgressBar.setVisibility(View.VISIBLE);
+            mRefreshImageView.setVisibility(View.INVISIBLE);
+        } else {
+            mProgressBar.setVisibility(View.INVISIBLE);
+            mRefreshImageView.setVisibility(View.VISIBLE);
+        }
     }
-    else {
-           mProgressBar.setVisibility(View.INVISIBLE);
-           mRefreshImageView.setVisibility(View.VISIBLE);
-       }}
 
     private void updateDisplay() {
-        Current current = mForecast.getCurrent();
-        mTemperatureLabel.setText(current.getTemperature() + "");
-        mTimeLabel.setText("At " + current.getFormattedTime() + " it will be:");
-        mHumidityValue.setText(current.getHumidity() + "");
-        mPrecipValue.setText(current.getPrecipChance() + "%");
-        mSummaryLabel.setText(current.getSummary());
-        Drawable drawable = getResources().getDrawable(current.getIconId());
-        mIconImageView.setImageDrawable(drawable);
+        if (mCountryName != null) {
+            mLocationlabel.setText(mStateName + " , " + mCountryName);
+            Current current = mForecast.getCurrent();
+            mTemperatureLabel.setText(current.getTemperature() + "");
+            mTimeLabel.setText("At " + current.getFormattedTime() + " it will be:");
+            mHumidityValue.setText(current.getHumidity() + "");
+            mPrecipValue.setText(current.getPrecipChance() + "%");
+            mSummaryLabel.setText(current.getSummary());
+            Drawable drawable = ContextCompat.getDrawable(this, current.getIconId());
+            mIconImageView.setImageDrawable(drawable);
+        }
     }
 
     private Forecast parseForecastDetails(String jsonData) throws JSONException {
@@ -206,7 +259,7 @@ public class MainActivity extends ActionBarActivity {
         Hour[] hours = new Hour[data.length()];
 
         for (int i = 0; i < data.length(); i++) {
-        JSONObject jsonHour = data.getJSONObject(i);
+            JSONObject jsonHour = data.getJSONObject(i);
             Hour hour = new Hour();
             hour.setSummary(jsonHour.getString("summary"));
             hour.setTemperature(jsonHour.getDouble("temperature"));
@@ -217,7 +270,7 @@ public class MainActivity extends ActionBarActivity {
             hours[i] = hour;
 
         }
-    return hours;
+        return hours;
     }
 
     private Current getCurrentDetails(String jsonData) throws JSONException {
@@ -253,23 +306,56 @@ public class MainActivity extends ActionBarActivity {
 
 
     private void alertUserAboutError() {
-            AlertDialogFragment dialog = new AlertDialogFragment();
-            dialog.show(getFragmentManager(), "error_dialog");
-
+        AlertDialogFragment dialog = new AlertDialogFragment();
+        dialog.show(getFragmentManager(), "error_dialog");
     }
 
-    @OnClick (R.id.dailyButton)
+
+    @OnClick(R.id.dailyButton)
     public void startDailyActivity(View view) {
         Intent intent = new Intent(this, DailyForecastActivity.class);
         intent.putExtra(DAILY_FORECAST, mForecast.getDailyForecast());
         startActivity(intent);
 
     }
-    @OnClick (R.id.hourlyButton)
+    @OnClick(R.id.hourlyButton)
     public void startHourlyActivity(View view) {
         Intent intent = new Intent(this, HourlyForecastActivity.class);
         intent.putExtra(HOURLY_FORECAST, mForecast.getHourlyForecast());
         startActivity(intent);
+    }
+@AskPermission({Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION})
+    public void checkGPS() {
+    if(mBroadcastReceiver == null){
+        mBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mLatitude = (double) intent.getExtras().get("latitude");
+                mLongitude = (double) intent.getExtras().get("longitude");
+                Geocoder geocoder = new Geocoder(context, Locale.getDefault());
+                List<Address> addresses = null;
+                try {
+                    addresses = geocoder.getFromLocation(mLatitude, mLongitude, 1);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                mCityName = addresses.get(0).getAddressLine(0);
+                mStateName = addresses.get(0).getAddressLine(1);
+                mCountryName = addresses.get(0).getAddressLine(2);
+                Log.d("wuddup", "Latitude is: " + mLatitude + " and Longitude is: " + mLongitude);
+            }
 
+        };
+    }
+    registerReceiver(mBroadcastReceiver, new IntentFilter("location_update"));
+    }
+
+    @Override
+    public void onShowPermissionRationale(List<String> permissionList, RuntimePermissionRequest permissionRequest) {
+
+    }
+
+    @Override
+    public void onPermissionDenied(List<DeniedPermission> deniedPermissionList) {
     }
 }

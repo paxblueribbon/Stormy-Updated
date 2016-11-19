@@ -11,10 +11,14 @@ import android.widget.TextView;
 import com.example.paxie.stormy.R;
 import com.example.paxie.stormy.weather.Day;
 
+import butterknife.ButterKnife;
+
 /**
  * Created by paxie on 9/17/15.
  */
 public class DayAdapter extends BaseAdapter {
+
+
 
     private Context mContext;
     private Day[] mDays;
